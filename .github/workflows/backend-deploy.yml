@@ -47,5 +47,4 @@ jobs:
             docker stop $(docker ps -a -q)
             docker rm $(docker ps -a -q)
             docker run -d -p 443:3000 --name priceguard-docker --env-file ${{ secrets.ENV_FILE }} ${{ secrets.NCP_CONTAINER_REGISTRY }}/server
-            docker cp ${{ secrets.HOST_DIR }} priceguard-docker:${{ secrets.CONTAINER_DIR }} 
             docker image prune -f
