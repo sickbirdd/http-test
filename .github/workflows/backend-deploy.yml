@@ -25,7 +25,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.NCP_CONTAINER_REGISTRY }}/server:latest
-          cache-from: type=registry,ref=${{ secrets.PRODUCTION_CONTAINER_REGISTRY }}/server:latest
+          cache-from: type=registry,ref=${{ secrets.NCP_CONTAINER_REGISTRY }}/server:latest
           cache-to: type=inline
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
@@ -46,5 +46,5 @@ jobs:
             docker pull ${{ secrets.NCP_CONTAINER_REGISTRY }}/server
             docker stop $(docker ps -a -q)
             docker rm $(docker ps -a -q)
-            docker run -d -p 80:3000 --env-file ${{ secrets.ENV_FILE }} ${{ secrets.NCP_CONTAINER_REGISTRY }}/server
+            docker run -d -p 443:3000 --env-file ${{ secrets.ENV_FILE }} ${{ secrets.NCP_CONTAINER_REGISTRY }}/server
             docker image prune -f
