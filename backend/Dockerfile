@@ -10,6 +10,8 @@ COPY ./backend/. .
 
 RUN npm run build
 
+RUN mkdir -p ssl
+
 EXPOSE 3000
 
 CMD ["npm", "start"]
