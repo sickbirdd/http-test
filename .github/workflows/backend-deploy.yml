@@ -1,9 +1,8 @@
 name: 🍀 Deploy to Naver Cloud Platform
 on:
-  push:
+  pull_request:
     branches:
-      - release # Only in release branch
-      
+      - main
 jobs:
   push_to_registry:
     name: Push to ncp container registry
