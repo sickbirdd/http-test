@@ -1,8 +1,8 @@
 name: 🍀 Deploy to Naver Cloud Platform
 on:
-  push:
+  pull_request:
     branches:
-      - release # Only in release branch
+      - main # Only in release branch
       
 jobs:
   push_to_registry:
