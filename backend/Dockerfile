@@ -4,8 +4,6 @@ WORKDIR /usr/src/app
 
 COPY ./backend/package*.json ./
 
-RUN mkdir -p ssl
-
 RUN npm install
 
 COPY ./backend/. .
