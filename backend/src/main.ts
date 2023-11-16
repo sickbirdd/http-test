@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import * as fs from 'node:fs';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { CERT, FULL_CHAIN, PRIVATE_KEY } from './envList';
