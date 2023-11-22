@@ -16,8 +16,8 @@ export class AuthService {
 
     async getAccessToken(user: User): Promise<string> {
         return this.jwtService.sign(
-            { email: user.email, name: user.userName },
-            { secret: ACCESS_TOKEN_SECRETS, expiresIn: '5m' },
+            { id: user.id, email: user.email, name: user.userName },
+            { secret: ACCESS_TOKEN_SECRETS, expiresIn: '2h' },
         );
     }
 
