@@ -8,17 +8,55 @@ import { TrackingProductRepository } from './trackingProduct.repository';
 import { ProductRepository } from './product.repository';
 import { getProductInfo11st } from 'src/utils/openapi.11st';
 import { ProductDetailsDto } from 'src/dto/product.details.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { ProductPrice } from 'src/schema/product.schema';
+import { Model } from 'mongoose';
+import { ProductPriceDto } from 'src/dto/product.price.dto';
+import { PriceDataDto } from 'src/dto/price.data.dto';
+import { KR_OFFSET, NINETY_DAYS } from 'src/constants';
+import { Cron } from '@nestjs/schedule';
 
 const REGEXP_11ST =
     /http[s]?:\/\/(?:www\.|m\.)?11st\.co\.kr\/products\/(?:ma\/|m\/|pa\/)?([1-9]\d*)(?:\?.*)?(?:\/share)?/;
 @Injectable()
 export class ProductService {
+    private productDataCache = new Map();
     constructor(
         @InjectRepository(TrackingProductRepository)
         private trackingProductRepository: TrackingProductRepository,
         @InjectRepository(ProductRepository)
         private productRepository: ProductRepository,
-    ) {}
+        @InjectModel(ProductPrice.name)
+        private productPriceModel: Model<ProductPrice>,
+    ) {
+        this.initCache();
+    }
+
+    async initCache() {
+        const latestData = await this.productPriceModel
+            .aggregate([
+                {
+                    $sort: { time: -1 },
+                },
+                {
+                    $group: {
+                        _id: '$productId',
+                        price: { $first: '$price' },
+                        isSoldOut: { $first: '$isSoldOut' },
+                        lowestPrice: { $min: '$price' },
+                    },
+                },
+            ])
+            .exec();
+        latestData.forEach((data) => {
+            this.productDataCache.set(data._id, {
+                price: data.price,
+                isSoldOut: data.isSoldOut,
+                lowestPrice: data.lowestPrice,
+            });
+        });
+    }
+
     async verifyUrl(productUrlDto: ProductUrlDto): Promise<ProductInfoDto> {
         const { productUrl } = productUrlDto;
         const matchList = productUrl.match(REGEXP_11ST);
@@ -97,7 +135,8 @@ export class ProductService {
         const ranklist = await this.trackingProductRepository.getRankingList();
         const idx = ranklist.findIndex((product) => product.productId === selectProduct.id);
         const rank = idx === -1 ? idx : idx + 1;
-        /* 역대 최저가, 현재가격은 더미 데이터 사용 중, 그래프 데이터 추가 필요 */
+        const priceData = await this.getPriceData(selectProduct.id, NINETY_DAYS);
+        const { price, lowestPrice } = this.productDataCache.get(selectProduct.id);
         return {
             productName: selectProduct.productName,
             shop: selectProduct.shop,
@@ -105,8 +144,9 @@ export class ProductService {
             rank: rank,
             shopUrl: selectProduct.shopUrl,
             targetPrice: trackingProduct ? trackingProduct.targetPrice : -1,
-            lowestPrice: 500,
-            price: 777,
+            lowestPrice: lowestPrice,
+            price: price,
+            priceData: priceData,
         };
     }
 
@@ -135,5 +175,50 @@ export class ProductService {
             throw new HttpException('상품을 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
         }
         return trackingProduct;
+    }
+
+    async mongo(productPriceDto: ProductPriceDto) {
+        const newData = new this.productPriceModel(productPriceDto);
+        return newData.save();
+    }
+
+    async getPriceData(productId: string, days: number): Promise<PriceDataDto[]> {
+        const endDate = new Date(+new Date() + KR_OFFSET);
+        const startDate = new Date(endDate);
+        startDate.setDate(endDate.getDate() - days);
+        const dataInfo = await this.productPriceModel
+            .find({
+                productId: productId,
+                time: {
+                    $gte: startDate,
+                    $lte: endDate,
+                },
+            })
+            .exec();
+        return dataInfo.map(({ time, price, isSoldOut }) => {
+            return { time: new Date(time).getTime(), price, isSoldOut };
+        });
+    }
+    @Cron('* */10 * * * *')
+    async cyclicPriceChecker() {
+        const productList = await this.productRepository.find({ select: { id: true, productCode: true } });
+        const productCodeList = productList.map(({ productCode, id }) => getProductInfo11st(productCode, id));
+        const results = (await Promise.all(productCodeList)).map(({ productId, productPrice, isSoldOut }) => {
+            return { productId, price: productPrice, isSoldOut };
+        });
+        const updatedDataInfo = results.filter(({ productId, price, isSoldOut }) => {
+            const cache = this.productDataCache.get(productId);
+            if (!cache || cache.isSoldOut !== isSoldOut || cache.price !== price) {
+                const lowestPrice = cache ? Math.min(cache.lowestPrice, price) : price;
+                this.productDataCache.set(productId, {
+                    isSoldOut,
+                    price,
+                    lowestPrice,
+                });
+                return true;
+            }
+            return false;
+        });
+        await this.productPriceModel.insertMany(updatedDataInfo);
     }
 }

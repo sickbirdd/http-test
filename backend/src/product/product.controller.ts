@@ -19,6 +19,7 @@ import {
     ApiBearerAuth,
     ApiBody,
     ApiConflictResponse,
+    ApiGoneResponse,
     ApiHeader,
     ApiNotFoundResponse,
     ApiOkResponse,
@@ -46,6 +47,8 @@ import {
 import { User } from 'src/entities/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { HttpExceptionFilter } from 'src/exceptions/http.exception.filter';
+import { ProductPriceDto } from 'src/dto/product.price.dto';
+import { ExpiredTokenError } from 'src/dto/auth.swagger.dto';
 
 @ApiBearerAuth()
 @ApiHeader({
@@ -54,6 +57,7 @@ import { HttpExceptionFilter } from 'src/exceptions/http.exception.filter';
 })
 @ApiTags('상품 API')
 @ApiUnauthorizedResponse({ type: UnauthorizedRequest, description: '승인되지 않은 요청' })
+@ApiGoneResponse({ type: ExpiredTokenError, description: 'accessToken 만료' })
 @Controller('product')
 @UseFilters(HttpExceptionFilter)
 @UseGuards(AuthGuard('access'))
@@ -117,7 +121,7 @@ export class ProductController {
     @ApiBadRequestResponse({ type: RequestError, description: '잘못된 요청입니다.' })
     @Get(':productCode')
     async getProductDetails(@Req() req: Request & { user: User }, @Param('productCode') productCode: string) {
-        const { productName, shop, imageUrl, rank, shopUrl, targetPrice, lowestPrice, price } =
+        const { productName, shop, imageUrl, rank, shopUrl, targetPrice, lowestPrice, price, priceData } =
             await this.productService.getProductDetails(req.user.id, productCode);
         return {
             statusCode: HttpStatus.OK,
@@ -131,6 +135,7 @@ export class ProductController {
             targetPrice,
             lowestPrice,
             price,
+            priceData,
         };
     }
 
@@ -152,5 +157,11 @@ export class ProductController {
     async deleteProduct(@Req() req: Request & { user: User }, @Param('productCode') productCode: string) {
         await this.productService.deleteProduct(req.user.id, productCode);
         return { statusCode: HttpStatus.OK, message: '추적 상품 삭제 성공' };
+    }
+
+    @Post('/mongoTest')
+    async testMongo(@Body() productPriceDto: ProductPriceDto) {
+        await this.productService.mongo(productPriceDto);
+        return { statusCode: HttpStatus.OK, message: 'mongoDB 연결 테스트 성공' };
     }
 }

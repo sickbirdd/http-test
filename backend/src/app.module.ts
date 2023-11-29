@@ -9,6 +9,9 @@ import { ProductModule } from './product/product.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
+import { MongooseModule } from '@nestjs/mongoose';
+import { MONGODB_URL } from './constants';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
     imports: [
@@ -17,6 +20,8 @@ import { LoggerMiddleware } from './middlewares/logger.middleware';
         UsersModule,
         AuthModule,
         ProductModule,
+        MongooseModule.forRoot(MONGODB_URL),
+        ScheduleModule.forRoot(),
     ],
     controllers: [AppController],
     providers: [AppService],
