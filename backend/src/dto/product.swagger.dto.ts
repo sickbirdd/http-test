@@ -1,8 +1,8 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductInfoDto } from './product.info.dto';
 import { TrackingProductDto } from './product.tracking.dto';
 import { ProductPriceDto } from './product.price.dto';
+import { RecommendProductDto } from './product.recommend.dto';
 
 export class VerifyUrlSuccess {
     @ApiProperty({
@@ -140,6 +140,8 @@ const trackingProductListExample = [
         imageUrl: 'https://cdn.011st.com/11dims/strip/false/11src/asin/B091516D2Z/B.jpg?1700527038699',
         targetPrice: 30000,
         price: 20000,
+        isAlert: true,
+        priceData: priceDataExample,
     },
     {
         productName: 'Mercer Culinary 밀레니아 10인치 브레드 나이프 빵 칼 (M23210WBH)',
@@ -148,6 +150,8 @@ const trackingProductListExample = [
         imageUrl: 'https://cdn.011st.com/11dims/strip/false/11src/asin/B01HZ0YT2C/B.jpg?1700390686058',
         targetPrice: 20000,
         price: 15000,
+        isAlert: true,
+        priceData: priceDataExample,
     },
 ];
 
@@ -177,6 +181,7 @@ const recommendProductListExample = [
         imageUrl: 'https://cdn.011st.com/11dims/strip/false/11src/product/6221602897/B.jpg?556000000',
         price: 1234,
         rank: 1,
+        priceData: priceDataExample,
     },
     {
         productName: '본사) 쿠쿠 화이트 3구 인덕션레인지 CIR-E301FW',
@@ -185,6 +190,7 @@ const recommendProductListExample = [
         imageUrl: 'https://cdn.011st.com/11dims/strip/false/11src/dl/v2/5/0/0/0/6/8/pNOcE/3969500068_154126549.jpg',
         price: 1234,
         rank: 2,
+        priceData: priceDataExample,
     },
     {
         productName:
@@ -194,6 +200,7 @@ const recommendProductListExample = [
         imageUrl: 'https://cdn.011st.com/11dims/strip/false/11src/product/4725944460/B.jpg?338000000',
         price: 1234,
         rank: 3,
+        priceData: priceDataExample,
     },
     {
         productName: 'Hallmark Keepsake 해리포터 마법의 분류 모자 크리스마스 장식',
@@ -202,6 +209,7 @@ const recommendProductListExample = [
         imageUrl: 'https://cdn.011st.com/11dims/strip/false/11src/asin/B091516D2Z/B.jpg?1700715151392',
         price: 1234,
         rank: 4,
+        priceData: priceDataExample,
     },
 ];
 
@@ -220,7 +228,7 @@ export class GetRecommendListSuccess {
         example: JSON.stringify(recommendProductListExample, null, 2),
         description: '추천 상품 목록',
     })
-    recommendList: ProductInfoDto[];
+    recommendList: RecommendProductDto[];
 }
 export class ProductDetailsSuccess {
     @ApiProperty({
@@ -344,6 +352,18 @@ export class TrackingProductsNotFound {
     statusCode: number;
     @ApiProperty({
         example: '상품을 찾을 수 없습니다.',
+        description: '메시지',
+    })
+    message: string;
+}
+export class ToggleAlertSuccess {
+    @ApiProperty({
+        example: HttpStatus.OK,
+        description: 'Http 상태 코드',
+    })
+    statusCode: number;
+    @ApiProperty({
+        example: '알림 설정 성공',
         description: '메시지',
     })
     message: string;
